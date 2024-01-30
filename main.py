@@ -1,11 +1,14 @@
 import asyncio
-import pathlib
 import ssl
 import sys
+import os
 import websockets
+import time
 REMOTEURL = None
 LOCALHOST = None
 LOCALPORT = None
+if not os.path.exists("recv_data"):
+    os.mkdir("recv_data")
 async def all(websocket: websockets.WebSocketClientProtocol):
     print("connected from", websocket.remote_address, websocket.path)
     async with websockets.connect(REMOTEURL+websocket.path) as websocket2:
@@ -15,11 +18,15 @@ async def all(websocket: websockets.WebSocketClientProtocol):
                     while True:
                         data = await websocket2.recv()
                         print(f"<<< {data}")
+                        with open(f"recv_data/{time.time()}_get.hex", "wb") as f:
+                            f.write(data)
                         await websocket.send(data)
                 async def local2remote():
                     while True:
                         data = await websocket.recv()
                         print(f">>> {data}")
+                        with open(f"recv_data/{time.time()}_send.hex", "wb") as f:
+                            f.write(data)
                         await websocket2.send(data)
                 await asyncio.gather(remote2local(), local2remote())
             except (websockets.exceptions.ConnectionClosedOK, websockets.exceptions.ConnectionClosedError):
